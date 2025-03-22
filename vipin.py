@@ -6,19 +6,23 @@ app = Flask(__name__)
 COOKIES_FILE = "cookies.txt"
 
 @app.route('/download', methods=['GET'])
-def download_video():
+def download():
     video_url = request.args.get('url')
+    download_type = request.args.get('type', 'video')  # Default: Video
 
     if not video_url:
         return jsonify({"error": "YouTube URL required!"}), 400
 
+    # Format select karein (MP4 ya MP3)
+    if download_type == "audio":
+        format_option = "bestaudio/best"
+    else:
+        format_option = "bestvideo+bestaudio/best"
+
     try:
         ydl_opts = {
-            'format': 'best',
-            'cookiefile': COOKIES_FILE,  # Cookies.txt ka path
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-            }
+            'format': format_option,
+            'cookiefile': COOKIES_FILE
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
