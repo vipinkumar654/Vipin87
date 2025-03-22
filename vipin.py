@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import yt_dlp
+import os
 
 app = Flask(__name__)
-CORS(app)  # Ye CORS issue fix karega
+CORS(app)  # Fix CORS Error
 
 COOKIES_FILE = "cookies.txt"
 
@@ -15,7 +16,6 @@ def download():
     if not video_url:
         return jsonify({"error": "YouTube URL required!"}), 400
 
-    # Format select karein
     format_option = "bestaudio/best" if download_type == "audio" else "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"
 
     try:
@@ -43,5 +43,7 @@ def download():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ⚡ Correct Port Handling for Deployment
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 8080))  # Render/Heroku ke liye port 8080
+    app.run(host='0.0.0.0', port=port)
