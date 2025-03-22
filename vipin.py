@@ -13,29 +13,41 @@ def download():
     if not video_url:
         return jsonify({"error": "YouTube URL required!"}), 400
 
-    # Format select karein (MP4 ya MP3)
+    # Format select karein
     if download_type == "audio":
         format_option = "bestaudio/best"
     else:
-        format_option = "bestvideo+bestaudio/best"
+        format_option = "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"
 
     try:
         ydl_opts = {
             'format': format_option,
-            'cookiefile': COOKIES_FILE
+            'cookiefile': COOKIES_FILE,
+            'merge_output_format': 'mp4',
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4'
+            }]
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            download_url = info.get("url", None)
 
-            if not download_url:
-                return jsonify({"error": "Failed to extract download link"}), 500
+            # Video link extract karein
+            formats = info.get("formats", [])
+            video_url = None
+            for f in formats:
+                if f.get("ext") == "mp4" and f.get("vcodec") != "none":  # Ensure it's video
+                    video_url = f.get("url")
+                    break  # First matching video URL ko use karein
+
+            if not video_url:
+                return jsonify({"error": "Failed to extract video link"}), 500
 
             return jsonify({
                 "title": info.get("title", "Unknown Title"),
                 "thumbnail": info.get("thumbnail", ""),
                 "duration": info.get("duration", 0),
-                "download_url": download_url
+                "download_url": video_url
             })
 
     except Exception as e:
