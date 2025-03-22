@@ -3,7 +3,6 @@ import yt_dlp
 
 app = Flask(__name__)
 
-# Cookies file ka path
 COOKIES_FILE = "cookies.txt"
 
 @app.route('/download', methods=['GET'])
@@ -16,7 +15,10 @@ def download_video():
     try:
         ydl_opts = {
             'format': 'best',
-            'cookiefile': COOKIES_FILE  # Cookies.txt ka path
+            'cookiefile': COOKIES_FILE,  # Cookies.txt ka path
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
