@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import yt_dlp
 
 app = Flask(__name__)
+CORS(app)  # Ye CORS issue fix karega
 
 COOKIES_FILE = "cookies.txt"
 
@@ -14,31 +16,19 @@ def download():
         return jsonify({"error": "YouTube URL required!"}), 400
 
     # Format select karein
-    if download_type == "audio":
-        format_option = "bestaudio/best"
-    else:
-        format_option = "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"
+    format_option = "bestaudio/best" if download_type == "audio" else "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"
 
     try:
         ydl_opts = {
             'format': format_option,
             'cookiefile': COOKIES_FILE,
             'merge_output_format': 'mp4',
-            'postprocessors': [{
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4'
-            }]
+            'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}]
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-
-            # Video link extract karein
             formats = info.get("formats", [])
-            video_url = None
-            for f in formats:
-                if f.get("ext") == "mp4" and f.get("vcodec") != "none":  # Ensure it's video
-                    video_url = f.get("url")
-                    break  # First matching video URL ko use karein
+            video_url = next((f.get("url") for f in formats if f.get("ext") == "mp4" and f.get("vcodec") != "none"), None)
 
             if not video_url:
                 return jsonify({"error": "Failed to extract video link"}), 500
